@@ -1,0 +1,126 @@
+
+class bayes:
+
+    trainingFile = "trainingset.csv"
+    trainingDataList = []
+
+    testFile = "testset.csv"
+    testDataList = []
+    differentResults = []
+    differentAttributes = []
+    finalValuesForResults = {}
+    def readTrainingData(self):
+        file = open(self.trainingFile, "r")
+        for line in file:
+            line.strip()
+            splitStr = line.split(",")
+            self.trainingDataList.append(splitStr)
+            if splitStr[-1].strip() not in self.differentResults:
+                self.differentResults.append(splitStr[-1].strip())
+        # print(self.differentResults)
+
+
+    def readTestData(self):
+        file = open(self.testFile, "r")
+        for line in file:
+            splitStr = line.split(",")
+            stripped = []
+            for attr in splitStr:
+                stripped.append(attr.strip())
+            self.testDataList.append(stripped)
+
+
+
+    def getDifferentAttributes(self):
+        transposed = [[self.trainingDataList[j][i] for j in range(len(self.trainingDataList))] for i in range(len(self.trainingDataList[0]))]
+        for column in transposed:
+            columnAttributeList = []
+            for attribute in column:
+                if attribute.strip() not in columnAttributeList:
+                    columnAttributeList.append(attribute.strip())
+            self.differentAttributes.append(columnAttributeList)
+        # print(self.differentAttributes)
+
+    def test(self):
+        for row in self.testDataList:
+            finalResults = self.classifyForTestRow(row)
+            maxVal = 0
+            maxKey = ""
+            for key, val in finalResults.items():
+                # print(key, val)
+                if val > maxVal:
+                    maxVal = val
+                    maxKey = key
+            print("For row: ", row, " value chosen is: ", maxKey)
+
+    def classifyForTestRow(self, row):
+        # print(row)
+        differentResultsFinalProbabilities = {}
+        for result in self.differentResults:
+            finalProbability = 1.
+            p1 = self.getResultProbabilityAndResultCount(result)[0]
+            # print(p1)
+            finalProbability *= p1
+            # print(finalProbability)
+            for idx, attribute in enumerate(row):
+                p2 = self.getAttributeProbabilityUnderResultCondition(idx, attribute, result)
+                # print(result, attribute, p2)
+                finalProbability *= p2
+            differentResultsFinalProbabilities[result] = finalProbability
+        # print(differentResultsFinalProbabilities)
+        return differentResultsFinalProbabilities
+
+    def getAttributeProbabilityUnderResultCondition(self, attributeIdx, attribute, result):
+        count = 0
+        resultCount = self.getResultProbabilityAndResultCount(result)[1]
+        for row in self.trainingDataList:
+            if row[-1].strip() == result and row[attributeIdx] == attribute:
+                count += 1
+        if count == 0:
+            count = self.laPlace(resultCount, attribute)[0]
+            resultCount = self.laPlace(resultCount, attribute)[1]
+        probability = count / resultCount
+        # print(probability)
+        return probability
+
+    def laPlace(self, denominator, attribute):
+        increase = 0
+        for list in self.differentAttributes:
+            if attribute in list:
+                increase = len(list)
+        return (1, denominator + increase)
+
+
+    def getResultProbabilityAndResultCount(self, result):
+        count = 0
+        for row in self.trainingDataList:
+            if row[-1].strip() == result:
+                count += 1
+        probability = count / len(self.trainingDataList)
+        # print(probability, count)
+        return probability, count
+
+    def testInput(self, row):
+        finalResults = self.classifyForTestRow(row)
+        maxVal = 0
+        maxKey = ""
+        for key, val in finalResults.items():
+            # print(key, val)
+            if val > maxVal:
+                maxVal = val
+                maxKey = key
+        print("For row: ", row, " value chosen is: ", maxKey)
+    def userInputVector(self):
+        while True:
+            print(self.differentAttributes[:-1])
+            inputVec = input("Please enter one of each value, separated by spaces: ")
+            print()
+            if inputVec == "exit":
+                break
+            splitInputVec = inputVec.split(" ")
+            while (len(splitInputVec) != len(self.differentAttributes) - 1):
+                print(self.differentAttributes[:-1])
+                inputVec = input("Please enter one of each value, separated by spaces: ")
+                print()
+                splitInputVec = inputVec.split(" ")
+            self.testInput(splitInputVec)
